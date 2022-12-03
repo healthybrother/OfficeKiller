@@ -1,6 +1,7 @@
 package org.healthyin.OfficeKiller.models;
 
 import lombok.Data;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -19,14 +20,10 @@ public class PerformanceProgress implements Serializable {
     private String progressId;
 
     /**
-     * 周期开始时间
+     * 周期时间
      */
-    private Date startTime;
+    private Pair<Date, Date> period;
 
-    /**
-     * 周期结束时间
-     */
-    private Date endTime;
 
 //    /**
 //     * 对应的考核指标

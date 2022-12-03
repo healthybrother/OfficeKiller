@@ -1,6 +1,7 @@
 package org.healthyin.OfficeKiller.utils;
 
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -10,10 +11,10 @@ import org.healthyin.OfficeKiller.models.Staff;
 
 import java.io.FileInputStream;
 import java.nio.file.FileSystemException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.Pattern;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @author healthyin
@@ -55,11 +56,11 @@ public class ExcelHandler {
                 staff.getPerformanceList().add(performance);
             }
             int version = staff.getPerformanceList().get(0).getVersion();
-            staff.getPerformanceList().forEach(performance -> {
+//            staff.getPerformanceList().forEach(performance -> {
 //                if (performance.getVersion() != version) {
 //                    throw new RuntimeException(staff.getName() + "周报内容不全");
 //                }
-            });
+//            });
             result.add(staff);
         }
 
@@ -89,11 +90,10 @@ public class ExcelHandler {
 
             String timeStr = getCellValue(sheet.getRow(1).getCell(cell.getColumnIndex()));
 
-            List<Date> periodTime = getPeriodTime(timeStr);
+            Pair<Date, Date> periodTime = DateUtils.getPeriodTime(timeStr);
 
-            if (!periodTime.isEmpty()) {
-                progress.setStartTime(periodTime.get(0));
-                progress.setEndTime(periodTime.get(1));
+            if (null != periodTime.getLeft() && null != periodTime.getRight()) {
+                progress.setPeriod(periodTime);
             }
 
             performance.getProgressList().put(startCol-2, progress);
@@ -123,66 +123,5 @@ public class ExcelHandler {
             default:
                 return "";
         }
-    }
-
-    private List<Date> getPeriodTime(String str){
-        List<Date> result = Lists.newArrayList();
-        if (null == str || str.isBlank()) {
-            return result;
-        }
-        List<String> splitString = Arrays.asList(str.split("[（）月\\-日]"));
-        List<String> dateNum = Lists.newArrayList();
-        splitString.forEach(tmpStr -> {
-            if (isNumeric(tmpStr)) {
-                dateNum.add(tmpStr);
-            }
-        });
-
-        Calendar today = Calendar.getInstance();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
-        Date startTime;
-        Date endTime;
-        try{
-            if (dateNum.size() == 3) {
-                String startTimeString = today.get(Calendar.YEAR)
-                        + (dateNum.get(0).length() == 1 ? ("0" + dateNum.get(0)) : dateNum.get(0))
-                        + (dateNum.get(1).length() == 1 ? ("0" + dateNum.get(1)) : dateNum.get(1));
-                String endTimeString = today.get(Calendar.YEAR)
-                        + (dateNum.get(0).length() == 1 ? ("0" + dateNum.get(0)) : dateNum.get(0))
-                        + (dateNum.get(2).length() == 1 ? ("0" + dateNum.get(2)) : dateNum.get(2));
-                startTime = simpleDateFormat.parse(startTimeString);
-                endTime = simpleDateFormat.parse(endTimeString);
-                result.add(startTime);
-                result.add(endTime);
-            } else if (dateNum.size() == 4) {
-                String startTimeString = today.get(Calendar.YEAR)
-                        + (dateNum.get(0).length() == 1 ? ("0" + dateNum.get(0)) : dateNum.get(0))
-                        + (dateNum.get(1).length() == 1 ? ("0" + dateNum.get(1)) : dateNum.get(1));
-                String endTimeString = today.get(Calendar.YEAR)
-                        + (dateNum.get(2).length() == 1 ? ("0" + dateNum.get(2)) : dateNum.get(2))
-                        + (dateNum.get(3).length() == 1 ? ("0" + dateNum.get(3)) : dateNum.get(3));
-                startTime = simpleDateFormat.parse(startTimeString);
-                endTime = simpleDateFormat.parse(endTimeString);
-                result.add(startTime);
-                result.add(endTime);
-            }
-            //处理跨年的情况
-            if (!result.isEmpty()) {
-                if(result.get(1).before(result.get(0))) {
-                    String startTimeString = today.get(Calendar.YEAR)-1
-                            + (dateNum.get(0).length() == 1 ? ("0" + dateNum.get(0)) : dateNum.get(0))
-                            + (dateNum.get(1).length() == 1 ? ("0" + dateNum.get(1)) : dateNum.get(1));
-                    result.set(0, simpleDateFormat.parse(startTimeString));
-                }
-            }
-        } catch (ParseException e) {
-            System.out.println("转时间出错了");;
-        }
-        return result;
-    }
-
-    private static boolean isNumeric(String str) {
-        Pattern pattern = Pattern.compile("[0-9]*");
-        return pattern.matcher(str).matches();
     }
 }
